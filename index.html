@@ -607,6 +607,152 @@
       transform: translateY(0);
     }
 
+    .exercise-dialog {
+      width: min(720px, calc(100vw - 28px));
+      max-height: calc(100vh - 28px);
+      padding: 0;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 24px 70px rgba(24, 27, 31, 0.22);
+    }
+
+    .exercise-dialog::backdrop {
+      background: rgba(24, 27, 31, 0.42);
+    }
+
+    .dialog-head {
+      display: grid;
+      grid-template-columns: 1fr var(--tap);
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .dialog-head h2 {
+      font-size: 1.18rem;
+      line-height: 1.2;
+    }
+
+    .dialog-subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+
+    .dialog-close {
+      min-width: var(--tap);
+      min-height: var(--tap);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .dialog-body {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.88fr) minmax(260px, 1.12fr);
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .exercise-media {
+      display: grid;
+      align-content: center;
+      min-height: 260px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f2f5f7;
+    }
+
+    .exercise-media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 260px;
+      object-fit: contain;
+      background: #ffffff;
+    }
+
+    .exercise-media img[hidden] {
+      display: none;
+    }
+
+    .media-fallback {
+      display: none;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 800;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .media-fallback.is-visible {
+      display: block;
+    }
+
+    .exercise-detail {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .detail-tile {
+      min-width: 0;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .detail-tile strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+
+    .instruction-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 20px;
+      color: var(--ink);
+      font-size: 0.94rem;
+      line-height: 1.4;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 0 14px 14px;
+    }
+
+    .dialog-search {
+      display: inline-grid;
+      align-content: center;
+      min-height: var(--tap);
+      padding: 0 14px;
+      border-radius: var(--radius);
+      text-decoration: none;
+    }
+
     @media (max-width: 860px) {
       .control-strip,
       .summary-grid,
@@ -623,6 +769,10 @@
 
       .section-meta {
         text-align: left;
+      }
+
+      .dialog-body {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -888,6 +1038,32 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <dialog class="exercise-dialog" id="exerciseDialog" aria-labelledby="exerciseDialogTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow" id="exerciseDialogEyebrow">ExerciseDB</p>
+        <h2 id="exerciseDialogTitle">Exercise details</h2>
+        <p class="dialog-subtitle" id="exerciseDialogSubtitle"></p>
+      </div>
+      <form method="dialog">
+        <button class="dialog-close" type="submit" aria-label="Close exercise details">x</button>
+      </form>
+    </div>
+    <div class="dialog-body">
+      <div class="exercise-media">
+        <img id="exerciseDialogGif" alt="">
+        <p class="media-fallback" id="exerciseDialogMediaFallback"></p>
+      </div>
+      <div class="exercise-detail">
+        <div class="detail-grid" id="exerciseDialogDetails"></div>
+        <ol class="instruction-list" id="exerciseDialogInstructions"></ol>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <a class="primary-button dialog-search" id="exerciseDialogSearch" target="_blank" rel="noopener noreferrer">Search more on Google</a>
+    </div>
+  </dialog>
+
   <script>
     const STORAGE_KEY = "workout-tracker-v1";
     const TARGET_WEIGHT = 86;
@@ -901,6 +1077,637 @@
       "None"
     ];
 
+    const EXERCISE_DATASET = {
+      "0688": {
+        name: "scapular pull-up",
+        bodyPart: "back",
+        equipment: "body weight",
+        target: "traps",
+        secondary: ["biceps", "rhomboids", "rear deltoids"],
+        mediaId: "uTBt1HV",
+        steps: [
+          "Start by hanging from a pull-up bar with your palms facing away from you and your arms fully extended.",
+          "Retract your shoulder blades by pulling them down and back.",
+          "Engage your back muscles and pull your body up towards the bar, focusing on squeezing your shoulder blades together.",
+          "Pause for a moment at the top of the movement, then slowly lower your body back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0652": {
+        name: "pull-up",
+        bodyPart: "back",
+        equipment: "body weight",
+        target: "lats",
+        secondary: ["biceps", "forearms"],
+        mediaId: "lBDjFxJ",
+        steps: [
+          "Hang from a pull-up bar with your palms facing away from you and your arms fully extended.",
+          "Engage your core and squeeze your shoulder blades together.",
+          "Pull your body up towards the bar by bending your elbows and bringing your chest towards the bar.",
+          "Pause at the top of the movement, then slowly lower your body back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0027": {
+        name: "barbell bent over row",
+        bodyPart: "back",
+        equipment: "barbell",
+        target: "upper back",
+        secondary: ["biceps", "forearms"],
+        mediaId: "eZyBC3j",
+        steps: [
+          "Stand with your feet shoulder-width apart and knees slightly bent.",
+          "Bend forward at the hips while keeping your back straight and chest up.",
+          "Grasp the barbell with an overhand grip, hands slightly wider than shoulder-width apart.",
+          "Pull the barbell towards your lower chest by retracting your shoulder blades and squeezing your back muscles.",
+          "Pause for a moment at the top, then slowly lower the barbell back to the starting position."
+        ]
+      },
+      "0292": {
+        name: "dumbbell one arm bent-over row",
+        bodyPart: "back",
+        equipment: "dumbbell",
+        target: "upper back",
+        secondary: ["biceps", "forearms"],
+        mediaId: "C0MA9bC",
+        steps: [
+          "Stand with your feet shoulder-width apart, holding a dumbbell in one hand with your palm facing your body.",
+          "Bend your knees slightly and hinge forward at the hips, keeping your back straight and your core engaged.",
+          "Let the dumbbell hang straight down towards the floor, with your arm fully extended.",
+          "Pull the dumbbell up towards your chest, keeping your elbow close to your body and squeezing your shoulder blades together.",
+          "Pause for a moment at the top, then slowly lower the dumbbell back down to the starting position."
+        ]
+      },
+      "0197": {
+        name: "cable pulldown (pro lat bar)",
+        bodyPart: "back",
+        equipment: "cable",
+        target: "lats",
+        secondary: ["biceps", "forearms"],
+        mediaId: "qdRxqCj",
+        steps: [
+          "Adjust the seat height so that your thighs are parallel to the ground and your feet are flat on the floor.",
+          "Grasp the lat bar with an overhand grip, slightly wider than shoulder-width apart.",
+          "Sit down and lean back slightly, keeping your chest up and your back straight.",
+          "Pull the bar down towards your chest, squeezing your shoulder blades together.",
+          "Pause for a moment at the bottom of the movement, then slowly release the bar back up to the starting position."
+        ]
+      },
+      "0318": {
+        name: "dumbbell incline curl",
+        bodyPart: "upper arms",
+        equipment: "dumbbell",
+        target: "biceps",
+        secondary: ["forearms"],
+        mediaId: "ae9UoXQ",
+        steps: [
+          "Set an incline bench to a 45-degree angle and sit on it with a dumbbell in each hand, palms facing forward.",
+          "Rest your upper arms on the incline bench and let your elbows hang down, fully extending your arms.",
+          "Keeping your upper arms stationary, exhale and curl the weights while contracting your biceps.",
+          "Continue to raise the dumbbells until your biceps are fully contracted and the dumbbells are at shoulder level.",
+          "Hold the contracted position for a brief pause as you squeeze your biceps."
+        ]
+      },
+      "0662": {
+        name: "push-up",
+        bodyPart: "chest",
+        equipment: "body weight",
+        target: "pectorals",
+        secondary: ["triceps", "deltoids", "core"],
+        mediaId: "I4hDWkc",
+        steps: [
+          "Start in a high plank position with your hands slightly wider than shoulder-width apart and your feet together.",
+          "Engage your core and lower your body towards the ground by bending your elbows, keeping your body in a straight line.",
+          "Pause for a moment when your chest is just above the ground, then push yourself back up to the starting position by straightening your arms.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0289": {
+        name: "dumbbell bench press",
+        bodyPart: "chest",
+        equipment: "dumbbell",
+        target: "pectorals",
+        secondary: ["triceps", "shoulders"],
+        mediaId: "SpYC0Kp",
+        steps: [
+          "Lie flat on a bench with your feet flat on the ground and your back pressed against the bench.",
+          "Hold a dumbbell in each hand, with your palms facing forward and your arms extended above your chest.",
+          "Lower the dumbbells slowly to the sides of your chest, keeping your elbows at a 90-degree angle.",
+          "Pause for a moment, then push the dumbbells back up to the starting position, fully extending your arms.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0414": {
+        name: "dumbbell standing alternate overhead press",
+        bodyPart: "shoulders",
+        equipment: "dumbbell",
+        target: "delts",
+        secondary: ["triceps", "core"],
+        mediaId: "bBi35y3",
+        steps: [
+          "Stand with your feet shoulder-width apart, holding a dumbbell in each hand at shoulder level with your palms facing forward.",
+          "Press one dumbbell overhead, fully extending your arm.",
+          "Lower the dumbbell back to shoulder level.",
+          "Repeat with the other arm.",
+          "Continue alternating arms for the desired number of repetitions."
+        ]
+      },
+      "1267": {
+        name: "cable one arm press on exercise ball",
+        bodyPart: "chest",
+        equipment: "cable",
+        target: "pectorals",
+        secondary: ["shoulders", "triceps"],
+        mediaId: "MKIelrR",
+        steps: [
+          "Sit on an exercise ball with your feet flat on the ground and your back straight.",
+          "Hold a cable handle in one hand and position your arm at chest height, elbow bent.",
+          "Place your other hand on your hip for stability.",
+          "Press the cable handle forward, extending your arm fully.",
+          "Pause for a moment, then slowly return to the starting position."
+        ]
+      },
+      "0334": {
+        name: "dumbbell lateral raise",
+        bodyPart: "shoulders",
+        equipment: "dumbbell",
+        target: "delts",
+        secondary: ["traps"],
+        mediaId: "DsgkuIt",
+        steps: [
+          "Stand with your feet shoulder-width apart and hold a dumbbell in each hand, palms facing your body.",
+          "Keep your back straight and engage your core.",
+          "Raise your arms out to the sides until they are parallel to the floor, keeping a slight bend in your elbows.",
+          "Pause for a moment at the top, then slowly lower your arms back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0200": {
+        name: "cable pushdown (with rope attachment)",
+        bodyPart: "upper arms",
+        equipment: "cable",
+        target: "triceps",
+        secondary: ["forearms"],
+        mediaId: "dU605di",
+        steps: [
+          "Attach a rope attachment to a high pulley on a cable machine.",
+          "Stand facing the machine with your feet shoulder-width apart and a slight bend in your knees.",
+          "Grasp the rope with an overhand grip, palms facing each other.",
+          "Keep your elbows close to your sides and your upper arms stationary throughout the exercise.",
+          "Exhale and push the rope downward by extending your elbows until your arms are fully extended."
+        ]
+      },
+      "0282": {
+        name: "decline sit-up",
+        bodyPart: "waist",
+        equipment: "body weight",
+        target: "abs",
+        secondary: ["hip flexors", "lower back"],
+        mediaId: "QLL2gdc",
+        steps: [
+          "Lie on a decline bench with your feet secured and your knees bent.",
+          "Place your hands behind your head or across your chest.",
+          "Engage your abs and lift your upper body off the bench, curling forward towards your knees.",
+          "Pause for a moment at the top, then slowly lower your upper body back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "3013": {
+        name: "low glute bridge on floor",
+        bodyPart: "upper legs",
+        equipment: "body weight",
+        target: "glutes",
+        secondary: ["hamstrings", "core"],
+        mediaId: "u0cNiij",
+        steps: [
+          "Lie flat on your back with your knees bent and feet flat on the ground.",
+          "Place your arms by your sides, palms facing down.",
+          "Engage your glutes and core, then lift your hips off the ground until your body forms a straight line from your knees to your shoulders.",
+          "Pause for a moment at the top, squeezing your glutes.",
+          "Slowly lower your hips back down to the starting position."
+        ]
+      },
+      "0085": {
+        name: "barbell romanian deadlift",
+        bodyPart: "upper legs",
+        equipment: "barbell",
+        target: "glutes",
+        secondary: ["hamstrings", "lower back"],
+        mediaId: "wQ2c4XD",
+        steps: [
+          "Stand with your feet shoulder-width apart and your toes pointing forward.",
+          "Hold the barbell with an overhand grip, hands slightly wider than shoulder-width apart.",
+          "Bend at the hips, keeping your back straight and your knees slightly bent.",
+          "Lower the barbell towards the ground, keeping it close to your body.",
+          "Feel the stretch in your hamstrings as you lower the barbell."
+        ]
+      },
+      "0026": {
+        name: "barbell bench squat",
+        bodyPart: "upper legs",
+        equipment: "barbell",
+        target: "quads",
+        secondary: ["glutes", "hamstrings", "calves"],
+        mediaId: "W9pFVv1",
+        steps: [
+          "Set up a barbell on a squat rack at chest height.",
+          "Stand facing away from the rack, with your feet shoulder-width apart.",
+          "Bend your knees and lower your body down into a squat position, keeping your back straight and chest up.",
+          "Grasp the barbell with an overhand grip, slightly wider than shoulder-width apart.",
+          "Lift the barbell off the rack and step back, ensuring your feet are still shoulder-width apart."
+        ]
+      },
+      "0599": {
+        name: "lever seated leg curl",
+        bodyPart: "upper legs",
+        equipment: "leverage machine",
+        target: "hamstrings",
+        secondary: ["calves"],
+        mediaId: "Zg3XY7P",
+        steps: [
+          "Adjust the machine to fit your body and sit on it with your back against the backrest.",
+          "Place your lower legs under the padded lever, just above your ankles.",
+          "Grasp the handles on the sides of the machine for support.",
+          "Keeping your upper legs stationary, exhale and curl your legs up as far as possible.",
+          "Hold the contracted position for a brief pause as you squeeze your hamstrings."
+        ]
+      },
+      "1757": {
+        name: "dumbbell single leg deadlift",
+        bodyPart: "upper legs",
+        equipment: "dumbbell",
+        target: "glutes",
+        secondary: ["hamstrings", "lower back"],
+        mediaId: "gKozT8X",
+        steps: [
+          "Stand with your feet hip-width apart, holding a dumbbell in your right hand.",
+          "Shift your weight onto your left leg and lift your right foot slightly off the ground.",
+          "Keeping your back straight, hinge forward at the hips and lower the dumbbell towards the ground.",
+          "At the same time, extend your right leg straight behind you, maintaining a slight bend in your left knee.",
+          "Lower the dumbbell until your torso and right leg are parallel to the ground."
+        ]
+      },
+      "1391": {
+        name: "sled calf press on leg press",
+        bodyPart: "lower legs",
+        equipment: "sled machine",
+        target: "calves",
+        secondary: ["hamstrings", "quadriceps"],
+        mediaId: "ykHcWme",
+        steps: [
+          "Adjust the seat of the leg press machine so that your knees are slightly bent when your feet are on the sled.",
+          "Place your feet shoulder-width apart on the sled, with your toes pointing forward.",
+          "Release the safety handles and push the sled away from you by extending your knees and ankles.",
+          "Pause for a moment at the top of the movement, then slowly lower the sled back down by bending your knees and ankles.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "3544": {
+        name: "bodyweight incline side plank",
+        bodyPart: "waist",
+        equipment: "body weight",
+        target: "abs",
+        secondary: ["obliques", "shoulders"],
+        mediaId: "5VXmnV5",
+        steps: [
+          "Start by lying on your side with your legs extended and stacked on top of each other.",
+          "Place your forearm on the ground directly below your shoulder, with your elbow bent at a 90-degree angle.",
+          "Engage your core and lift your hips off the ground, creating a straight line from your head to your feet.",
+          "Hold this position for the desired amount of time.",
+          "Lower your hips back down to the ground and repeat on the other side."
+        ]
+      },
+      "0017": {
+        name: "assisted pull-up",
+        bodyPart: "back",
+        equipment: "leverage machine",
+        target: "lats",
+        secondary: ["biceps", "forearms"],
+        mediaId: "kiJ4Z2K",
+        steps: [
+          "Adjust the machine to your desired weight and height settings.",
+          "Grasp the handles with an overhand grip, slightly wider than shoulder-width apart.",
+          "Hang with your arms fully extended and your feet off the ground.",
+          "Engage your back muscles and pull your body up towards the handles, keeping your elbows close to your body.",
+          "Continue pulling until your chin is above the handles."
+        ]
+      },
+      "0651": {
+        name: "pull up (neutral grip)",
+        bodyPart: "back",
+        equipment: "body weight",
+        target: "lats",
+        secondary: ["biceps", "forearms"],
+        mediaId: "0V2YQjW",
+        steps: [
+          "Hang from a pull-up bar with a neutral grip (palms facing each other) and your arms fully extended.",
+          "Engage your core and squeeze your shoulder blades together.",
+          "Pull your body up towards the bar by bending your elbows and driving your elbows down towards your hips.",
+          "Continue pulling until your chin is above the bar.",
+          "Pause for a moment at the top, then slowly lower your body back down to the starting position with control."
+        ]
+      },
+      "1350": {
+        name: "lever seated row",
+        bodyPart: "back",
+        equipment: "leverage machine",
+        target: "upper back",
+        secondary: ["biceps", "forearms"],
+        mediaId: "7I6LNUG",
+        steps: [
+          "Adjust the seat height and footrests to a comfortable position.",
+          "Sit on the machine with your chest against the pad and your feet on the footrests.",
+          "Grasp the handles with an overhand grip, shoulder-width apart.",
+          "Keep your back straight and your core engaged.",
+          "Pull the handles towards your body, squeezing your shoulder blades together."
+        ]
+      },
+      "0238": {
+        name: "cable straight arm pulldown",
+        bodyPart: "back",
+        equipment: "cable",
+        target: "lats",
+        secondary: ["shoulders", "biceps"],
+        mediaId: "x69MAlq",
+        steps: [
+          "Attach a straight bar to the high pulley of a cable machine.",
+          "Stand facing the machine with your feet shoulder-width apart.",
+          "Grasp the bar with an overhand grip, keeping your arms straight and your palms facing down.",
+          "Engage your lats and pull the bar down towards your thighs, keeping your arms straight throughout the movement.",
+          "Pause for a moment at the bottom, then slowly return the bar to the starting position."
+        ]
+      },
+      "2292": {
+        name: "dumbbell rear delt raise",
+        bodyPart: "shoulders",
+        equipment: "dumbbell",
+        target: "delts",
+        secondary: ["trapezius", "rhomboids"],
+        mediaId: "mu5Guxt",
+        steps: [
+          "Stand with your feet shoulder-width apart and hold a dumbbell in each hand, palms facing your body.",
+          "Bend your knees slightly and hinge forward at the hips, keeping your back straight.",
+          "Raise your arms out to the sides, keeping a slight bend in your elbows, until they are parallel to the floor.",
+          "Pause for a moment at the top, then slowly lower your arms back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0313": {
+        name: "dumbbell hammer curl",
+        bodyPart: "upper arms",
+        equipment: "dumbbell",
+        target: "biceps",
+        secondary: ["forearms"],
+        mediaId: "slDvUAU",
+        steps: [
+          "Stand up straight with a dumbbell in each hand, palms facing your torso.",
+          "Keep your elbows close to your torso and rotate the palms of your hands until they are facing forward.",
+          "This will be your starting position.",
+          "Now, keeping the upper arms stationary, exhale and curl the weights while contracting your biceps.",
+          "Continue to raise the weights until your biceps are fully contracted and the dumbbells are at shoulder level."
+        ]
+      },
+      "0314": {
+        name: "dumbbell incline bench press",
+        bodyPart: "chest",
+        equipment: "dumbbell",
+        target: "pectorals",
+        secondary: ["shoulders", "triceps"],
+        mediaId: "ns0SIbU",
+        steps: [
+          "Set up an incline bench at a 45-degree angle.",
+          "Sit on the bench with your feet flat on the ground and your back pressed firmly against the bench.",
+          "Hold a dumbbell in each hand, palms facing forward, and lift them to shoulder height.",
+          "Slowly lower the dumbbells to the sides of your chest, keeping your elbows at a 90-degree angle.",
+          "Push the dumbbells back up to the starting position, fully extending your arms."
+        ]
+      },
+      "2137": {
+        name: "dumbbell arnold press",
+        bodyPart: "shoulders",
+        equipment: "dumbbell",
+        target: "delts",
+        secondary: ["triceps", "upper chest"],
+        mediaId: "Xy4jlWA",
+        steps: [
+          "Sit on a bench with back support and hold a dumbbell in each hand at shoulder level, palms facing your body and elbows bent.",
+          "Press the dumbbells upward until your arms are fully extended and your palms are facing forward.",
+          "Rotate your wrists as you lift, so that your palms are facing forward at the top of the movement.",
+          "Pause for a moment at the top, then slowly lower the dumbbells back to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "1299": {
+        name: "lever incline chest press",
+        bodyPart: "chest",
+        equipment: "leverage machine",
+        target: "pectorals",
+        secondary: ["shoulders", "triceps"],
+        mediaId: "jHAnWmT",
+        steps: [
+          "Adjust the seat and backrest of the leverage machine to a comfortable position.",
+          "Sit on the machine with your back against the backrest and your feet flat on the floor.",
+          "Grasp the handles with an overhand grip and position your hands slightly wider than shoulder-width apart.",
+          "Push the handles forward and away from your body until your arms are fully extended.",
+          "Pause for a moment, then slowly bend your elbows and lower the handles back towards your chest."
+        ]
+      },
+      "0179": {
+        name: "cable low fly",
+        bodyPart: "chest",
+        equipment: "cable",
+        target: "pectorals",
+        secondary: ["deltoids", "triceps"],
+        mediaId: "FVmZVhk",
+        steps: [
+          "Attach the handles to the low pulleys of a cable machine and select an appropriate weight.",
+          "Stand in the middle of the machine with your feet shoulder-width apart and a slight bend in your knees.",
+          "Grasp the handles with an overhand grip and extend your arms out to the sides, keeping a slight bend in your elbows.",
+          "Maintaining control, slowly bring your arms forward in a sweeping motion, crossing them in front of your body.",
+          "Pause for a moment at the peak of the movement, feeling the stretch in your chest muscles."
+        ]
+      },
+      "0194": {
+        name: "cable overhead triceps extension (rope attachment)",
+        bodyPart: "upper arms",
+        equipment: "cable",
+        target: "triceps",
+        secondary: ["shoulders"],
+        mediaId: "2IxROQ1",
+        steps: [
+          "Attach a rope to a cable machine at a high position.",
+          "Stand facing away from the machine with your feet shoulder-width apart.",
+          "Grasp the rope with both hands, palms facing each other, and bring your hands above your head.",
+          "Keep your upper arms close to your head and your elbows pointing forward.",
+          "Slowly lower the rope behind your head by bending your elbows."
+        ]
+      },
+      "0872": {
+        name: "reverse crunch",
+        bodyPart: "waist",
+        equipment: "body weight",
+        target: "abs",
+        secondary: ["hip flexors"],
+        mediaId: "nCU1Ekp",
+        steps: [
+          "Lie flat on your back with your arms extended along your sides.",
+          "Bend your knees and lift your feet off the ground, bringing your thighs perpendicular to the floor.",
+          "Contract your abs and curl your hips off the floor, bringing your knees towards your chest.",
+          "Pause for a moment at the top, then slowly lower your hips back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0196": {
+        name: "cable pull through (with rope)",
+        bodyPart: "upper legs",
+        equipment: "cable",
+        target: "glutes",
+        secondary: ["hamstrings", "lower back"],
+        mediaId: "OM46QHm",
+        steps: [
+          "Stand facing away from the cable machine with your feet shoulder-width apart.",
+          "Grab the rope attachment with both hands and step forward, creating tension in the cable.",
+          "Bend at the hips and lower your upper body until it is parallel to the ground, keeping your back straight.",
+          "Engage your glutes and hamstrings to pull your body back up to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "1463": {
+        name: "sled 45 degree leg press (side pov)",
+        bodyPart: "upper legs",
+        equipment: "sled machine",
+        target: "glutes",
+        secondary: ["quadriceps", "hamstrings", "calves"],
+        mediaId: "2Qh2J1e",
+        steps: [
+          "Adjust the seat of the sled machine so that your knees are at a 90-degree angle when your feet are on the footplate.",
+          "Sit on the sled machine with your back flat against the backrest and your feet shoulder-width apart on the footplate.",
+          "Grip the handles on the sides of the seat for stability.",
+          "Push against the footplate to extend your legs, straightening them completely.",
+          "Pause for a moment at the top, then slowly bend your knees to lower the footplate back to the starting position."
+        ]
+      },
+      "0585": {
+        name: "lever leg extension",
+        bodyPart: "upper legs",
+        equipment: "leverage machine",
+        target: "quads",
+        secondary: ["hamstrings"],
+        mediaId: "my33uHU",
+        steps: [
+          "Adjust the seat height and backrest of the machine to fit your body.",
+          "Sit on the machine with your back against the backrest and your feet on the footpad.",
+          "Grasp the handles or sidebars for stability.",
+          "Extend your legs forward by straightening your knees, lifting the weight.",
+          "Pause for a moment at the top, then slowly lower the weight back to the starting position."
+        ]
+      },
+      "0586": {
+        name: "lever lying leg curl",
+        bodyPart: "upper legs",
+        equipment: "leverage machine",
+        target: "hamstrings",
+        secondary: ["calves"],
+        mediaId: "17lJ1kr",
+        steps: [
+          "Adjust the machine to fit your body and select the desired weight.",
+          "Lie face down on the machine with your legs straight and your heels against the padded lever.",
+          "Grasp the handles or the sides of the machine for stability.",
+          "Keeping your upper body stationary, exhale and curl your legs up as far as possible without lifting your hips off the pad.",
+          "Hold the contracted position for a brief pause as you squeeze your hamstrings."
+        ]
+      },
+      "2133": {
+        name: "farmers walk",
+        bodyPart: "upper legs",
+        equipment: "dumbbell",
+        target: "quads",
+        secondary: ["calves", "forearms", "core"],
+        mediaId: "qPEzJjA",
+        steps: [
+          "Stand up straight with a dumbbell in each hand, palms facing your sides.",
+          "Keep your back straight and your shoulders back.",
+          "Take small, controlled steps forward, maintaining an upright posture.",
+          "Continue walking for the desired distance or time.",
+          "To finish, stop walking and carefully lower the dumbbells to your sides."
+        ]
+      },
+      "0417": {
+        name: "dumbbell standing calf raise",
+        bodyPart: "lower legs",
+        equipment: "dumbbell",
+        target: "calves",
+        secondary: ["ankles"],
+        mediaId: "dPmaUaU",
+        steps: [
+          "Stand with your feet shoulder-width apart, holding a dumbbell in each hand.",
+          "Raise your heels off the ground as high as possible, using your calves.",
+          "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+          "Repeat for the desired number of repetitions."
+        ]
+      },
+      "0979": {
+        name: "band horizontal pallof press",
+        bodyPart: "waist",
+        equipment: "band",
+        target: "abs",
+        secondary: ["obliques", "glutes"],
+        mediaId: "9pa4H5m",
+        steps: [
+          "Attach the band to a sturdy anchor point at waist height.",
+          "Stand perpendicular to the anchor point with your feet shoulder-width apart.",
+          "Grasp the band handle with both hands and step away from the anchor point to create tension in the band.",
+          "Bring your hands to your chest, keeping your elbows bent and close to your body.",
+          "Engage your core and maintain a stable stance."
+        ]
+      }
+    };
+
+    const EXERCISE_DATASET_MATCHES = {
+      "sun-scap-pull": "0688",
+      "sun-negative-pull": "0652",
+      "sun-barbell-row": "0027",
+      "sun-db-row": "0292",
+      "sun-lat-pulldown": "0197",
+      "sun-incline-curl": "0318",
+      "mon-push-up": "0662",
+      "mon-db-bench": "0289",
+      "mon-ohp": "0414",
+      "mon-cable-press": "1267",
+      "mon-lateral-raise": "0334",
+      "mon-triceps": "0200",
+      "mon-sit-up": "0282",
+      "tue-glute-bridge": "3013",
+      "tue-rdl": "0085",
+      "tue-box-squat": "0026",
+      "tue-leg-curl": "0599",
+      "tue-single-rdl": "1757",
+      "tue-calf-press": "1391",
+      "tue-side-plank": "3544",
+      "wed-assisted-pull": "0017",
+      "wed-top-hold": "0652",
+      "wed-negative": "0651",
+      "wed-barbell-row": "0027",
+      "wed-row-machine": "1350",
+      "wed-straight-arm": "0238",
+      "wed-rear-delt": "2292",
+      "wed-hammer-curl": "0313",
+      "thu-tempo-push": "0662",
+      "thu-incline-db": "0314",
+      "thu-arnold": "2137",
+      "thu-machine-press": "1299",
+      "thu-cable-fly": "0179",
+      "thu-triceps": "0194",
+      "thu-reverse-crunch": "0872",
+      "fri-pull-through": "0196",
+      "fri-leg-press": "1463",
+      "fri-leg-extension": "0585",
+      "fri-hamstring-curl": "0586",
+      "fri-farmer-carry": "2133",
+      "fri-calf-raise": "0417",
+      "fri-pallof": "0979"
+    };
+
     const PLANS = {
       0: {
         key: "0",
@@ -908,13 +1715,13 @@
         cardio: { type: "Easy rower or treadmill walk", minutes: 15, plan: "15-20 min Zone 2" },
         exercises: [
           ex("sun-dead-hang", "Skill", "Dead hang", 3, "20-30 sec", "sec", 20, "Grip, shoulder opening, bar comfort."),
-          ex("sun-scap-pull", "Skill", "Scap pull-up", 3, "6-8", "reps", 6, "Small range, strict control."),
+          ex("sun-scap-pull", "Skill", "scapular pull-up", 3, "6-8", "reps", 6, "Small range, strict control.", "scap-pull-up"),
           ex("sun-negative-pull", "Skill", "Negative pull-up", 5, "2", "reps", 2, "Lower for 5-8 sec each rep."),
-          ex("sun-barbell-row", "Free weight", "Barbell bent-over row", 4, "8-12", "reps", 8, "Substituted for inverted row because the current rack does not allow it."),
-          ex("sun-db-row", "Free weight", "One-arm dumbbell row", 3, "10-12/side", "reps", 10, "Full stretch, no torso twist."),
-          ex("sun-lat-pulldown", "Machine", "Wide-grip lat pulldown", 3, "8-10", "reps", 8, "Pull elbows down, not just hands."),
+          ex("sun-barbell-row", "Free weight", "barbell bent over row", 4, "8-12", "reps", 8, "Substituted for inverted row because the current rack does not allow it."),
+          ex("sun-db-row", "Free weight", "dumbbell one arm bent-over row", 3, "10-12/side", "reps", 10, "Full stretch, no torso twist.", "one-arm-dumbbell-row"),
+          ex("sun-lat-pulldown", "Machine", "cable pulldown (pro lat bar)", 3, "8-10", "reps", 8, "Pull elbows down, not just hands.", "wide-grip-lat-pulldown"),
           ex("sun-face-pull", "Cable", "Face pull", 3, "12-15", "reps", 12, "Rear delt and upper-back work."),
-          ex("sun-incline-curl", "Free weight", "Incline dumbbell curl", 2, "10-12", "reps", 10, "Controlled tempo.")
+          ex("sun-incline-curl", "Free weight", "dumbbell incline curl", 2, "10-12", "reps", 10, "Controlled tempo.", "incline-dumbbell-curl")
         ]
       },
       1: {
@@ -922,13 +1729,13 @@
         label: "Monday Push",
         cardio: { type: "Brisk treadmill walk", minutes: 20, plan: "20 min moderate" },
         exercises: [
-          ex("mon-push-up", "Skill", "Standard push-up", 5, "2 reps shy", "reps", 8, "Build total reps toward 35-45 across the workout."),
-          ex("mon-db-bench", "Free weight", "Flat dumbbell bench press", 4, "6-10", "reps", 6, "Main pushing strength lift."),
-          ex("mon-ohp", "Free weight", "Standing one-arm dumbbell overhead press", 3, "8-10/side", "reps", 8, "Core tight, no lean-back."),
+          ex("mon-push-up", "Skill", "push-up", 5, "2 reps shy", "reps", 8, "Build total reps toward 35-45 across the workout.", "standard-push-up"),
+          ex("mon-db-bench", "Free weight", "dumbbell bench press", 4, "6-10", "reps", 6, "Main pushing strength lift.", "flat-dumbbell-bench-press"),
+          ex("mon-ohp", "Free weight", "dumbbell standing alternate overhead press", 3, "8-10/side", "reps", 8, "Core tight, no lean-back.", "standing-one-arm-dumbbell-overhead-press"),
           ex("mon-cable-press", "Cable", "Standing one-arm cable chest press", 3, "10-12/side", "reps", 10, "Whole-body pressing pattern."),
-          ex("mon-lateral-raise", "Free weight", "Dumbbell lateral raise", 3, "12-15", "reps", 12, "Smooth reps, no swing."),
-          ex("mon-triceps", "Cable", "Rope triceps pressdown", 3, "10-12", "reps", 10, "Elbows pinned."),
-          ex("mon-sit-up", "Core", "Sit-up bench", 3, "12-15", "reps", 12, "Slow lowering phase.")
+          ex("mon-lateral-raise", "Free weight", "dumbbell lateral raise", 3, "12-15", "reps", 12, "Smooth reps, no swing."),
+          ex("mon-triceps", "Cable", "cable pushdown (with rope attachment)", 3, "10-12", "reps", 10, "Elbows pinned.", "rope-triceps-pressdown"),
+          ex("mon-sit-up", "Core", "decline sit-up", 3, "12-15", "reps", 12, "Slow lowering phase.", "sit-up-bench")
         ]
       },
       2: {
@@ -936,13 +1743,13 @@
         label: "Tuesday Legs",
         cardio: { type: "Flat walk or gentle incline walk", minutes: 15, plan: "15-20 min knee-friendly" },
         exercises: [
-          ex("tue-glute-bridge", "Prep", "Glute bridge", 3, "12", "reps", 12, "Glute activation before loading."),
-          ex("tue-rdl", "Free weight", "Romanian deadlift", 4, "6-8", "reps", 6, "Posterior-chain priority."),
+          ex("tue-glute-bridge", "Prep", "low glute bridge on floor", 3, "12", "reps", 12, "Glute activation before loading.", "glute-bridge"),
+          ex("tue-rdl", "Free weight", "barbell romanian deadlift", 4, "6-8", "reps", 6, "Posterior-chain priority.", "romanian-deadlift"),
           ex("tue-hip-thrust", "Free weight", "Barbell hip thrust", 4, "8-10", "reps", 8, "Pause at top."),
-          ex("tue-box-squat", "Free weight", "High box squat or bench squat", 3, "6-8", "reps", 6, "Only if knee pain stays mild and controlled."),
-          ex("tue-leg-curl", "Machine", "Lying or seated leg curl", 3, "10-12", "reps", 10, "Hamstrings."),
-          ex("tue-single-rdl", "Free weight", "Single-leg RDL", 3, "8-10/side", "reps", 8, "Hip stability, balance."),
-          ex("tue-calf-press", "Machine", "Calf press", 4, "12-15", "reps", 12, "Full stretch."),
+          ex("tue-box-squat", "Free weight", "barbell bench squat", 3, "6-8", "reps", 6, "Only if knee pain stays mild and controlled.", "high-box-squat-or-bench-squat"),
+          ex("tue-leg-curl", "Machine", "lever seated leg curl", 3, "10-12", "reps", 10, "Hamstrings.", "lying-or-seated-leg-curl"),
+          ex("tue-single-rdl", "Free weight", "dumbbell single leg deadlift", 3, "8-10/side", "reps", 8, "Hip stability, balance.", "single-leg-rdl"),
+          ex("tue-calf-press", "Machine", "sled calf press on leg press", 4, "12-15", "reps", 12, "Full stretch.", "calf-press"),
           ex("tue-side-plank", "Core", "Side plank", 3, "30-45 sec/side", "sec", 30, "Anti-rotation trunk work.")
         ]
       },
@@ -954,11 +1761,11 @@
           ex("wed-assisted-pull", "Skill", "Assisted pull-up", 4, "4-6", "reps", 4, "Use the lightest help that preserves form."),
           ex("wed-top-hold", "Skill", "Top-position pull-up hold", 3, "10-20 sec", "sec", 10, "Chin over bar."),
           ex("wed-negative", "Skill", "Neutral-grip or chin-up negative", 3, "2-3", "reps", 2, "Different grip from Sunday."),
-          ex("wed-barbell-row", "Free weight", "Bent-over barbell row", 4, "6-8", "reps", 6, "Hard brace, flat back.", "barbell-bent-over-row"),
-          ex("wed-row-machine", "Machine", "Horizontal pull row machine", 3, "8-12", "reps", 8, "Squeeze shoulder blades."),
-          ex("wed-straight-arm", "Cable", "Straight-arm pulldown", 3, "12-15", "reps", 12, "Lat work without elbow flexion."),
-          ex("wed-rear-delt", "Free weight", "Rear-delt dumbbell raise", 3, "12-15", "reps", 12, "Light and strict."),
-          ex("wed-hammer-curl", "Free weight", "Hammer curl", 2, "10-12", "reps", 10, "Grip and brachialis.")
+          ex("wed-barbell-row", "Free weight", "barbell bent over row", 4, "6-8", "reps", 6, "Hard brace, flat back.", "barbell-bent-over-row"),
+          ex("wed-row-machine", "Machine", "lever seated row", 3, "8-12", "reps", 8, "Squeeze shoulder blades.", "horizontal-pull-row-machine"),
+          ex("wed-straight-arm", "Cable", "cable straight arm pulldown", 3, "12-15", "reps", 12, "Lat work without elbow flexion.", "straight-arm-pulldown"),
+          ex("wed-rear-delt", "Free weight", "dumbbell rear delt raise", 3, "12-15", "reps", 12, "Light and strict.", "rear-delt-dumbbell-raise"),
+          ex("wed-hammer-curl", "Free weight", "dumbbell hammer curl", 2, "10-12", "reps", 10, "Grip and brachialis.", "hammer-curl")
         ]
       },
       4: {
@@ -967,12 +1774,12 @@
         cardio: { type: "Brisk treadmill walk", minutes: 20, plan: "20 min moderate" },
         exercises: [
           ex("thu-tempo-push", "Skill", "Tempo push-up", 4, "6-10", "reps", 6, "3 sec down, 1 sec pause."),
-          ex("thu-incline-db", "Free weight", "Incline dumbbell press", 4, "8-10", "reps", 8, "Upper-chest bias."),
-          ex("thu-arnold", "Free weight", "Seated Arnold press", 3, "8-10", "reps", 8, "Different press pattern from Monday."),
-          ex("thu-machine-press", "Machine", "Incline or decline chest press machine", 3, "10-12", "reps", 10, "Pick one and keep it consistent for 12 weeks."),
-          ex("thu-cable-fly", "Cable", "Low-to-high cable fly", 3, "12-15", "reps", 12, "Light stretch and squeeze."),
-          ex("thu-triceps", "Cable", "Overhead rope triceps extension", 3, "10-12", "reps", 10, "Long-head triceps emphasis."),
-          ex("thu-reverse-crunch", "Core", "Reverse crunch or hanging knee raise", 3, "12-15", "reps", 12, "Controlled reps only.")
+          ex("thu-incline-db", "Free weight", "dumbbell incline bench press", 4, "8-10", "reps", 8, "Upper-chest bias.", "incline-dumbbell-press"),
+          ex("thu-arnold", "Free weight", "dumbbell arnold press", 3, "8-10", "reps", 8, "Different press pattern from Monday.", "seated-arnold-press"),
+          ex("thu-machine-press", "Machine", "lever incline chest press", 3, "10-12", "reps", 10, "Pick one and keep it consistent for 12 weeks.", "incline-or-decline-chest-press-machine"),
+          ex("thu-cable-fly", "Cable", "cable low fly", 3, "12-15", "reps", 12, "Light stretch and squeeze.", "low-to-high-cable-fly"),
+          ex("thu-triceps", "Cable", "cable overhead triceps extension (rope attachment)", 3, "10-12", "reps", 10, "Long-head triceps emphasis.", "overhead-rope-triceps-extension"),
+          ex("thu-reverse-crunch", "Core", "reverse crunch", 3, "12-15", "reps", 12, "Controlled reps only.", "reverse-crunch-or-hanging-knee-raise")
         ]
       },
       5: {
@@ -980,13 +1787,13 @@
         label: "Friday Legs",
         cardio: { type: "Easy walk", minutes: 15, plan: "15-20 min recovery pace" },
         exercises: [
-          ex("fri-pull-through", "Cable", "Cable pull-through", 4, "10-12", "reps", 10, "Hip hinge with lower spinal load."),
+          ex("fri-pull-through", "Cable", "cable pull through (with rope)", 4, "10-12", "reps", 10, "Hip hinge with lower spinal load.", "cable-pull-through"),
           ex("fri-single-hip", "Free weight", "Single-leg hip thrust", 3, "10/side", "reps", 10, "Glute-focused unilateral work."),
-          ex("fri-leg-press", "Machine", "Leg press with high-foot stance", 3, "10-12", "reps", 10, "Moderate depth only if knee tolerates it."),
-          ex("fri-leg-extension", "Machine", "Leg extension, controlled short arc", 2, "12-15", "reps", 12, "Skip if it irritates the knee."),
-          ex("fri-hamstring-curl", "Machine", "Single-leg hamstring curl", 3, "10-12/side", "reps", 10, "Balance left-right work."),
-          ex("fri-farmer-carry", "Carry", "Farmer carry", 4, "30-40 m", "m", 30, "Whole-body and trunk stability."),
-          ex("fri-calf-raise", "Free weight", "Standing calf raise", 4, "12-15", "reps", 12, "Slow stretch and squeeze."),
+          ex("fri-leg-press", "Machine", "sled 45 degree leg press (side pov)", 3, "10-12", "reps", 10, "Moderate depth only if knee tolerates it.", "leg-press-with-high-foot-stance"),
+          ex("fri-leg-extension", "Machine", "lever leg extension", 2, "12-15", "reps", 12, "Skip if it irritates the knee.", "leg-extension-controlled-short-arc"),
+          ex("fri-hamstring-curl", "Machine", "lever lying leg curl", 3, "10-12/side", "reps", 10, "Balance left-right work.", "single-leg-hamstring-curl"),
+          ex("fri-farmer-carry", "Carry", "farmers walk", 4, "30-40 m", "m", 30, "Whole-body and trunk stability.", "farmer-carry"),
+          ex("fri-calf-raise", "Free weight", "dumbbell standing calf raise", 4, "12-15", "reps", 12, "Slow stretch and squeeze.", "standing-calf-raise"),
           ex("fri-pallof", "Cable", "Pallof press", 3, "12/side", "reps", 12, "Anti-rotation trunk work.")
         ]
       },
@@ -1022,7 +1829,16 @@
       downloadDay: document.getElementById("downloadDay"),
       downloadAll: document.getElementById("downloadAll"),
       clearDay: document.getElementById("clearDay"),
-      toast: document.getElementById("toast")
+      toast: document.getElementById("toast"),
+      exerciseDialog: document.getElementById("exerciseDialog"),
+      exerciseDialogEyebrow: document.getElementById("exerciseDialogEyebrow"),
+      exerciseDialogTitle: document.getElementById("exerciseDialogTitle"),
+      exerciseDialogSubtitle: document.getElementById("exerciseDialogSubtitle"),
+      exerciseDialogGif: document.getElementById("exerciseDialogGif"),
+      exerciseDialogMediaFallback: document.getElementById("exerciseDialogMediaFallback"),
+      exerciseDialogDetails: document.getElementById("exerciseDialogDetails"),
+      exerciseDialogInstructions: document.getElementById("exerciseDialogInstructions"),
+      exerciseDialogSearch: document.getElementById("exerciseDialogSearch")
     };
 
     let state = loadState();
@@ -1086,7 +1902,8 @@
       document.addEventListener("input", handleInput);
       document.addEventListener("change", handleChange);
       document.addEventListener("click", handleClick);
-      document.addEventListener("click", handleInfoClick);
+      els.exerciseDialog.addEventListener("click", handleDialogBackdropClick);
+      els.exerciseDialogGif.addEventListener("error", handleDialogGifError);
       els.downloadDay.addEventListener("click", downloadCurrentDay);
       els.downloadAll.addEventListener("click", downloadAllData);
       els.clearDay.addEventListener("click", clearCurrentDay);
@@ -1116,18 +1933,6 @@
       }
     }
 
-    function handleInfoClick(event) {
-      const link = event.target.closest("a.info-button");
-      if (!link) return;
-      event.preventDefault();
-      const opened = window.open(link.href, "_blank");
-      if (opened) {
-        opened.opener = null;
-        return;
-      }
-      window.location.href = link.href;
-    }
-
     function handleChange(event) {
       const target = event.target;
       if (!target.dataset.setField) return;
@@ -1144,6 +1949,10 @@
       const button = event.target.closest("button[data-action]");
       if (!button) return;
       const action = button.dataset.action;
+      if (action === "exercise-info") {
+        showExerciseDialog(button.dataset.exerciseId);
+        return;
+      }
       if (action === "step-meta") {
         stepMeta(button.dataset.field, Number(button.dataset.delta));
         return;
@@ -1270,7 +2079,7 @@
               </div>
               <div class="exercise-tools">
                 <div class="target-pill">${escapeHTML(exercise.sets + " x " + exercise.target)}</div>
-                <a class="info-button" href="${escapeAttr(exerciseSearchUrl(exercise.name))}" target="_blank" rel="noopener noreferrer" title="Search images for ${escapeAttr(exercise.name)}" aria-label="Search images for ${escapeAttr(exercise.name)}">i</a>
+                <button class="info-button" type="button" data-action="exercise-info" data-exercise-id="${escapeAttr(exercise.id)}" title="View details for ${escapeAttr(exercise.name)}" aria-label="View details for ${escapeAttr(exercise.name)}">i</button>
               </div>
               <p class="exercise-note">${escapeHTML(exercise.notes)}</p>
             </div>
@@ -1306,6 +2115,105 @@
           <button class="set-button ${set.done ? "is-done" : ""}" type="button" data-action="toggle-set" data-exercise-id="${exercise.id}" data-set-index="${index}" aria-pressed="${set.done ? "true" : "false"}">${set.done ? "Done" : "Set"}</button>
         </div>
       `;
+    }
+
+    function showExerciseDialog(exerciseId) {
+      const entry = ensureEntry(currentDate);
+      const exercise = getPlanExercise(entry.planKey, exerciseId);
+      if (!exercise) return;
+
+      const info = getExerciseDatasetInfo(exercise.id);
+      const title = exercise.name;
+      const searchName = info ? info.name : exercise.name;
+      els.exerciseDialogTitle.textContent = title;
+      els.exerciseDialogEyebrow.textContent = info ? `ExerciseDB ${info.datasetId}` : "Google";
+      els.exerciseDialogSubtitle.textContent = info && info.name.toLowerCase() !== exercise.name.toLowerCase()
+        ? `Dataset match: ${info.name}`
+        : exercise.notes;
+      els.exerciseDialogSearch.href = exerciseSearchUrl(searchName);
+
+      if (info) {
+        renderExerciseDetails(info);
+        renderExerciseInstructions(info.steps);
+        renderExerciseGif(info, exercise);
+      } else {
+        renderExerciseDetails(null);
+        renderExerciseInstructions([]);
+        showMediaFallback("No dataset GIF is available for this exact exercise.");
+      }
+
+      if (typeof els.exerciseDialog.showModal === "function") {
+        els.exerciseDialog.showModal();
+      } else {
+        els.exerciseDialog.setAttribute("open", "");
+      }
+    }
+
+    function getExerciseDatasetInfo(exerciseId) {
+      const datasetId = EXERCISE_DATASET_MATCHES[exerciseId];
+      const info = datasetId ? EXERCISE_DATASET[datasetId] : null;
+      return info ? { ...info, datasetId } : null;
+    }
+
+    function renderExerciseDetails(info) {
+      const details = info ? [
+        ["Target", info.target],
+        ["Equipment", info.equipment],
+        ["Body part", info.bodyPart],
+        ["Secondary", info.secondary.join(", ") || "None"]
+      ] : [
+        ["Dataset", "No exact match"],
+        ["Search", "Google images"]
+      ];
+
+      els.exerciseDialogDetails.innerHTML = details.map(([label, value]) => `
+        <div class="detail-tile">
+          <span class="label">${escapeHTML(label)}</span>
+          <strong>${escapeHTML(displayValue(value))}</strong>
+        </div>
+      `).join("");
+    }
+
+    function renderExerciseInstructions(steps) {
+      if (!steps.length) {
+        els.exerciseDialogInstructions.innerHTML = "<li>Search Google for form cues and video references.</li>";
+        return;
+      }
+      els.exerciseDialogInstructions.innerHTML = steps.map((step) => (
+        `<li>${escapeHTML(step)}</li>`
+      )).join("");
+    }
+
+    function renderExerciseGif(info, exercise) {
+      if (!info.mediaId) {
+        showMediaFallback("This dataset record does not include a media reference.");
+        return;
+      }
+      els.exerciseDialogMediaFallback.classList.remove("is-visible");
+      els.exerciseDialogMediaFallback.textContent = "";
+      els.exerciseDialogGif.hidden = false;
+      els.exerciseDialogGif.alt = `${exercise.name} animation`;
+      els.exerciseDialogGif.src = exerciseGifUrl(info.mediaId);
+    }
+
+    function showMediaFallback(message) {
+      els.exerciseDialogGif.removeAttribute("src");
+      els.exerciseDialogGif.alt = "";
+      els.exerciseDialogGif.hidden = true;
+      els.exerciseDialogMediaFallback.textContent = message;
+      els.exerciseDialogMediaFallback.classList.add("is-visible");
+    }
+
+    function handleDialogGifError() {
+      showMediaFallback("The animation could not be loaded from the ExerciseDB media CDN.");
+    }
+
+    function handleDialogBackdropClick(event) {
+      if (event.target === els.exerciseDialog) els.exerciseDialog.close();
+    }
+
+    function exerciseGifUrl(mediaId) {
+      return `https://static.exercisedb.dev/media/${encodeURIComponent(mediaId)}.gif`;
     }
 
     function renderPlanOptions() {
@@ -1841,6 +2749,11 @@
 
     function exerciseSearchUrl(name) {
       return `https://www.google.com/search?udm=2&q=${encodeURIComponent(name + " exercise form")}`;
+    }
+
+    function displayValue(value) {
+      const text = String(value || "--");
+      return text === "--" ? text : text.charAt(0).toUpperCase() + text.slice(1);
     }
 
     function dayKey(date) {
