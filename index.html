@@ -307,12 +307,12 @@
       display: grid;
       gap: 12px;
       padding: 12px;
-      margin-bottom: 14px;
+      margin: 26px 0 14px;
     }
 
     .cardio-grid {
       display: grid;
-      grid-template-columns: minmax(220px, 1.3fr) minmax(170px, 0.8fr) minmax(170px, 0.8fr);
+      grid-template-columns: repeat(2, minmax(170px, 1fr));
       gap: 12px;
     }
 
@@ -483,11 +483,18 @@
       align-items: center;
       justify-content: center;
       min-height: var(--tap);
+      border: 1px solid transparent;
       border-radius: var(--radius);
       background: var(--surface-2);
       color: var(--muted);
       font-size: 0.92rem;
       font-weight: 900;
+    }
+
+    .set-number:hover {
+      border-color: rgba(217, 75, 61, 0.32);
+      background: #fff3f1;
+      color: var(--coral);
     }
 
     .set-button {
@@ -788,37 +795,6 @@
       </div>
     </section>
 
-    <section class="panel cardio-panel" aria-label="Cardio">
-      <div class="section-head" style="margin: 0;">
-        <h2>Cardio</h2>
-        <p class="section-meta" id="cardioPlanText"></p>
-      </div>
-      <div class="chip-row" id="cardioChips"></div>
-      <div class="cardio-grid">
-        <label>
-          <span class="label">Type</span>
-          <input id="cardioType" type="text" list="cardioOptions" data-meta="cardioType">
-          <datalist id="cardioOptions"></datalist>
-        </label>
-        <label>
-          <span class="label">Minutes</span>
-          <div class="stepper">
-            <button class="step-button" type="button" data-action="step-meta" data-field="cardioMinutes" data-delta="-5">-</button>
-            <input id="cardioMinutes" type="number" inputmode="numeric" min="0" max="240" step="1" data-meta="cardioMinutes">
-            <button class="step-button" type="button" data-action="step-meta" data-field="cardioMinutes" data-delta="5">+</button>
-          </div>
-        </label>
-        <label>
-          <span class="label">Calories</span>
-          <div class="stepper">
-            <button class="step-button" type="button" data-action="step-meta" data-field="cardioCalories" data-delta="-25">-</button>
-            <input id="cardioCalories" type="number" inputmode="numeric" min="0" max="3000" step="1" data-meta="cardioCalories">
-            <button class="step-button" type="button" data-action="step-meta" data-field="cardioCalories" data-delta="25">+</button>
-          </div>
-        </label>
-      </div>
-    </section>
-
     <section aria-label="Exercises">
       <div class="section-head">
         <h2 id="workoutTitle">Today's Work</h2>
@@ -833,6 +809,32 @@
       </div>
       <div class="panel notes-panel">
         <textarea id="notes" data-meta="notes" placeholder="Energy, knee comfort, meals, sleep, wins."></textarea>
+      </div>
+    </section>
+
+    <section class="panel cardio-panel" aria-label="Cardio">
+      <div class="section-head" style="margin: 0;">
+        <h2>Cardio</h2>
+        <p class="section-meta" id="cardioPlanText"></p>
+      </div>
+      <div class="chip-row" id="cardioChips"></div>
+      <div class="cardio-grid">
+        <label>
+          <span class="label">Total minutes</span>
+          <div class="stepper">
+            <button class="step-button" type="button" data-action="step-meta" data-field="cardioMinutes" data-delta="-5">-</button>
+            <input id="cardioMinutes" type="number" inputmode="numeric" min="0" max="240" step="1" data-meta="cardioMinutes">
+            <button class="step-button" type="button" data-action="step-meta" data-field="cardioMinutes" data-delta="5">+</button>
+          </div>
+        </label>
+        <label>
+          <span class="label">Total calories</span>
+          <div class="stepper">
+            <button class="step-button" type="button" data-action="step-meta" data-field="cardioCalories" data-delta="-25">-</button>
+            <input id="cardioCalories" type="number" inputmode="numeric" min="0" max="3000" step="1" data-meta="cardioCalories">
+            <button class="step-button" type="button" data-action="step-meta" data-field="cardioCalories" data-delta="25">+</button>
+          </div>
+        </label>
       </div>
     </section>
 
@@ -1010,8 +1012,6 @@
       gymDuration: document.getElementById("gymDuration"),
       cardioPlanText: document.getElementById("cardioPlanText"),
       cardioChips: document.getElementById("cardioChips"),
-      cardioType: document.getElementById("cardioType"),
-      cardioOptions: document.getElementById("cardioOptions"),
       cardioMinutes: document.getElementById("cardioMinutes"),
       cardioCalories: document.getElementById("cardioCalories"),
       workoutTitle: document.getElementById("workoutTitle"),
@@ -1070,7 +1070,7 @@
         const entry = ensureEntry(currentDate);
         entry.planKey = els.planSelect.value;
         const plan = PLANS[entry.planKey];
-        if (!entry.cardioType || entry.cardioType === "None") entry.cardioType = plan.cardio.type;
+        normalizeCardioTypes(entry);
         if (!toNumber(entry.cardioMinutes) && plan.cardio.minutes) entry.cardioMinutes = plan.cardio.minutes;
         ensurePlanExercises(entry);
         scheduleSave();
@@ -1156,21 +1156,13 @@
         toggleSet(button.dataset.exerciseId, Number(button.dataset.setIndex));
         return;
       }
-      if (action === "add-set") {
-        addSet(button.dataset.exerciseId);
-        return;
-      }
-      if (action === "remove-set") {
-        removeSet(button.dataset.exerciseId);
+      if (action === "delete-set") {
+        deleteSet(button.dataset.exerciseId, Number(button.dataset.setIndex));
         return;
       }
       if (action === "cardio-chip") {
-        const entry = ensureEntry(currentDate);
-        entry.cardioType = button.dataset.value;
-        syncMetaControls();
-        renderCardioChoices();
-        scheduleSave();
-        updateDerivedViews();
+        toggleCardioType(button.dataset.value);
+        return;
       }
     }
 
@@ -1201,36 +1193,47 @@
     function toggleSet(exerciseId, setIndex) {
       const entry = ensureEntry(currentDate);
       const set = getSet(entry, exerciseId, setIndex);
-      set.done = !set.done;
+      const markingDone = !set.done;
+      if (markingDone && !hasSetData(set)) {
+        showToast("Enter set data before adding the next set.");
+        return;
+      }
+      set.done = markingDone;
+      if (set.done) revealNextSet(entry, exerciseId, setIndex);
       renderExercisesOnly();
       scheduleSave();
       updateDerivedViews();
     }
 
-    function addSet(exerciseId) {
-      const entry = ensureEntry(currentDate);
+    function revealNextSet(entry, exerciseId, setIndex) {
       const planExercise = getPlanExercise(entry.planKey, exerciseId);
       const log = entry.exercises[exerciseId];
-      const previous = log.sets[log.sets.length - 1] || {};
-      log.sets.push({
-        weight: previous.weight || 0,
-        value: previous.value || (planExercise ? planExercise.defaultValue : 0),
-        done: false
-      });
-      renderExercisesOnly();
-      scheduleSave();
-      updateDerivedViews();
+      if (!log || !planExercise) return;
+      log.visibleSets = normalizeVisibleSetCount(log, planExercise);
+      const maxSets = Math.max(planExercise.sets, log.sets.length);
+      if (setIndex !== log.visibleSets - 1 || log.visibleSets >= maxSets) return;
+      log.visibleSets += 1;
+      ensureSetExists(log, planExercise, log.visibleSets - 1);
     }
 
-    function removeSet(exerciseId) {
+    function deleteSet(exerciseId, setIndex) {
       const entry = ensureEntry(currentDate);
       const log = entry.exercises[exerciseId];
       const planExercise = getPlanExercise(entry.planKey, exerciseId);
-      if (!log || !planExercise || log.sets.length <= planExercise.sets) return;
-      log.sets.pop();
+      if (!log || !planExercise || !log.sets[setIndex]) return;
+      const confirmed = window.confirm(`Delete set ${setIndex + 1} from ${planExercise.name}?`);
+      if (!confirmed) return;
+      if (log.sets.length <= 1) {
+        log.sets[0] = createSet(planExercise);
+        log.visibleSets = 1;
+      } else {
+        log.sets.splice(setIndex, 1);
+        log.visibleSets = clamp(normalizeVisibleSetCount(log, planExercise), 1, log.sets.length);
+      }
       renderExercisesOnly();
       scheduleSave();
       updateDerivedViews();
+      showToast(`Set ${setIndex + 1} deleted.`);
     }
 
     function renderAll() {
@@ -1257,6 +1260,7 @@
 
       els.exerciseList.innerHTML = plan.exercises.map((exercise) => {
         const log = entry.exercises[exercise.id];
+        const sets = getVisibleSets(log, exercise);
         return `
           <article class="exercise-card">
             <div class="exercise-card__head">
@@ -1277,11 +1281,7 @@
                 <span>${escapeHTML(metricLabel(exercise.metric))}</span>
                 <span>Done</span>
               </div>
-              ${log.sets.map((set, index) => renderSetRow(exercise, set, index)).join("")}
-            </div>
-            <div class="exercise-actions">
-              <button class="secondary-button" type="button" data-action="add-set" data-exercise-id="${exercise.id}">Add Set</button>
-              <button class="secondary-button" type="button" data-action="remove-set" data-exercise-id="${exercise.id}" ${log.sets.length <= exercise.sets ? "disabled" : ""}>Remove Extra</button>
+              ${sets.map((set, index) => renderSetRow(exercise, set, index)).join("")}
             </div>
           </article>
         `;
@@ -1292,7 +1292,7 @@
       const valueStep = exercise.metric === "reps" ? 1 : exercise.metric === "m" ? 5 : 5;
       return `
         <div class="set-row">
-          <div class="set-number">${index + 1}</div>
+          <button class="set-number" type="button" data-action="delete-set" data-exercise-id="${exercise.id}" data-set-index="${index}" title="Delete set ${index + 1}" aria-label="${escapeAttr("Delete " + exercise.name + " set " + (index + 1))}">${index + 1}</button>
           <div class="stepper">
             <button class="step-button" type="button" data-action="step-set" data-exercise-id="${exercise.id}" data-set-index="${index}" data-field="weight" data-delta="-2.5">-</button>
             <input type="number" inputmode="decimal" min="0" step="0.5" value="${escapeAttr(set.weight)}" data-set-field="weight" data-step="0.5" data-exercise-id="${exercise.id}" data-set-index="${index}" aria-label="${escapeAttr(exercise.name + " set " + (index + 1) + " kg")}">
@@ -1316,11 +1316,42 @@
 
     function renderCardioChoices() {
       const entry = ensureEntry(currentDate);
-      els.cardioOptions.innerHTML = CARDIO_TYPES.map((type) => `<option value="${escapeAttr(type)}"></option>`).join("");
-      els.cardioChips.innerHTML = CARDIO_TYPES.map((type) => {
-        const active = entry.cardioType === type;
-        return `<button class="chip ${active ? "is-active" : ""}" type="button" data-action="cardio-chip" data-value="${escapeAttr(type)}">${escapeHTML(type)}</button>`;
+      const selected = new Set(normalizeCardioTypes(entry));
+      const customTypes = [...selected].filter((type) => !CARDIO_TYPES.includes(type));
+      const options = [...CARDIO_TYPES, ...customTypes];
+      els.cardioChips.innerHTML = options.map((type) => {
+        const active = type === "None" ? selected.size === 0 : selected.has(type);
+        return `<button class="chip ${active ? "is-active" : ""}" type="button" data-action="cardio-chip" data-value="${escapeAttr(type)}" aria-pressed="${active ? "true" : "false"}">${escapeHTML(type)}</button>`;
       }).join("");
+    }
+
+    function toggleCardioType(type) {
+      const entry = ensureEntry(currentDate);
+      const selected = new Set(normalizeCardioTypes(entry));
+      if (type === "None") {
+        selected.clear();
+      } else if (selected.has(type)) {
+        selected.delete(type);
+      } else {
+        selected.add(type);
+      }
+      entry.cardioTypes = [...selected].filter((item) => item !== "None");
+      entry.cardioType = entry.cardioTypes.length ? entry.cardioTypes.join(", ") : "None";
+      renderCardioChoices();
+      scheduleSave();
+      updateDerivedViews();
+    }
+
+    function normalizeCardioTypes(entry) {
+      let types = Array.isArray(entry.cardioTypes) ? entry.cardioTypes : [];
+      if (!types.length && entry.cardioType && entry.cardioType !== "None") {
+        types = String(entry.cardioType).split(",");
+      }
+      entry.cardioTypes = [...new Set(types
+        .map((type) => String(type).trim())
+        .filter((type) => type && type !== "None"))];
+      entry.cardioType = entry.cardioTypes.length ? entry.cardioTypes.join(", ") : "None";
+      return entry.cardioTypes;
     }
 
     function renderExerciseTrendOptions() {
@@ -1349,7 +1380,7 @@
       els.bodyWeightValue.textContent = weight === "" ? "--" : Number(weight).toFixed(1);
       els.gymStart.value = entry.gymStart || "";
       els.gymEnd.value = entry.gymEnd || "";
-      els.cardioType.value = entry.cardioType || "";
+      normalizeCardioTypes(entry);
       els.cardioMinutes.value = entry.cardioMinutes ?? "";
       els.cardioCalories.value = entry.cardioCalories ?? "";
       els.notes.value = entry.notes || "";
@@ -1371,8 +1402,10 @@
       const entry = ensureEntry(currentDate);
       const plan = PLANS[entry.planKey];
       const totals = getDayTotals(entry);
+      const cardios = normalizeCardioTypes(entry);
       const parts = [`${totals.doneSets}/${totals.totalSets} sets done`];
       if (totals.volume > 0) parts.push(`${Math.round(totals.volume).toLocaleString()} kg x reps`);
+      if (cardios.length) parts.push(`${cardios.length} cardio${cardios.length === 1 ? "" : "s"}`);
       if (toNumber(entry.cardioCalories) > 0) parts.push(`${toNumber(entry.cardioCalories)} kcal`);
       els.daySummary.textContent = plan.exercises.length ? parts.join(" | ") : "Rest day";
     }
@@ -1572,8 +1605,9 @@
       plan.exercises.forEach((exercise) => {
         const log = (entry.exercises || {})[exercise.id];
         if (!log) return;
-        (log.sets || []).forEach((set) => {
-          totalSets += 1;
+        const sets = log.sets || [];
+        totalSets += Math.max(exercise.sets, sets.length);
+        sets.forEach((set) => {
           if (!set.done) return;
           doneSets += 1;
           volume += toNumber(set.weight) * toNumber(set.value);
@@ -1592,7 +1626,8 @@
           bodyWeight: lastBodyWeight(date) || START_WEIGHT,
           gymStart: "",
           gymEnd: "",
-          cardioType: plan.cardio.type,
+          cardioType: "None",
+          cardioTypes: [],
           cardioMinutes: plan.cardio.minutes,
           cardioCalories: "",
           notes: "",
@@ -1600,6 +1635,7 @@
         };
       }
       ensurePlanExercises(state.entries[date]);
+      normalizeCardioTypes(state.entries[date]);
       return state.entries[date];
     }
 
@@ -1613,28 +1649,19 @@
         }
         entry.exercises[exercise.id].name = exercise.name;
         entry.exercises[exercise.id].canonical = exercise.canonical;
-        while (entry.exercises[exercise.id].sets.length < exercise.sets) {
-          const previous = entry.exercises[exercise.id].sets[entry.exercises[exercise.id].sets.length - 1] || {};
-          entry.exercises[exercise.id].sets.push({
-            weight: previous.weight || 0,
-            value: exercise.defaultValue,
-            done: false
-          });
-        }
+        if (!Array.isArray(entry.exercises[exercise.id].sets)) entry.exercises[exercise.id].sets = [];
+        ensureSetExists(entry.exercises[exercise.id], exercise, 0);
+        entry.exercises[exercise.id].visibleSets = normalizeVisibleSetCount(entry.exercises[exercise.id], exercise);
       });
     }
 
     function createExerciseLog(exercise, date) {
       const previousSets = findPreviousSets(exercise.canonical, date);
-      const sets = Array.from({ length: exercise.sets }, (_, index) => ({
-        weight: previousSets[index] ? previousSets[index].weight || 0 : 0,
-        value: exercise.defaultValue,
-        done: false
-      }));
       return {
         name: exercise.name,
         canonical: exercise.canonical,
-        sets
+        sets: [createSet(exercise, previousSets[0])],
+        visibleSets: 1
       };
     }
 
@@ -1655,14 +1682,44 @@
     function getSet(entry, exerciseId, setIndex) {
       const planExercise = getPlanExercise(entry.planKey, exerciseId);
       if (!entry.exercises[exerciseId]) entry.exercises[exerciseId] = createExerciseLog(planExercise, entry.date);
-      if (!entry.exercises[exerciseId].sets[setIndex]) {
-        entry.exercises[exerciseId].sets[setIndex] = {
-          weight: 0,
-          value: planExercise ? planExercise.defaultValue : 0,
-          done: false
-        };
-      }
+      ensureSetExists(entry.exercises[exerciseId], planExercise, setIndex);
       return entry.exercises[exerciseId].sets[setIndex];
+    }
+
+    function getVisibleSets(log, exercise) {
+      log.visibleSets = normalizeVisibleSetCount(log, exercise);
+      return log.sets.slice(0, log.visibleSets);
+    }
+
+    function normalizeVisibleSetCount(log, exercise) {
+      const sets = Array.isArray(log.sets) ? log.sets : [];
+      const maxExisting = Math.max(1, sets.length);
+      const savedCount = Number(log.visibleSets);
+      if (Number.isFinite(savedCount) && savedCount > 0) {
+        return clamp(Math.round(savedCount), 1, maxExisting);
+      }
+      const lastDoneIndex = sets.reduce((last, set, index) => set && set.done ? index : last, -1);
+      const inferred = lastDoneIndex >= 0 ? lastDoneIndex + 2 : 1;
+      return clamp(inferred, 1, maxExisting);
+    }
+
+    function ensureSetExists(log, exercise, setIndex) {
+      while (log.sets.length <= setIndex) {
+        const previous = log.sets[log.sets.length - 1];
+        log.sets.push(createSet(exercise, previous));
+      }
+    }
+
+    function createSet(exercise, previous) {
+      return {
+        weight: previous ? previous.weight || 0 : 0,
+        value: previous ? previous.value || exercise.defaultValue : exercise.defaultValue,
+        done: false
+      };
+    }
+
+    function hasSetData(set) {
+      return toNumber(set.weight) > 0 || toNumber(set.value) > 0;
     }
 
     function getPlanExercise(planKey, exerciseId) {
