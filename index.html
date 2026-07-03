@@ -2205,7 +2205,7 @@
     }
 
     function handleDialogGifError() {
-      showMediaFallback("The animation could not be loaded from the ExerciseDB media CDN.");
+      showMediaFallback("The animation could not be loaded from the ExerciseDB media mirror.");
     }
 
     function handleDialogBackdropClick(event) {
@@ -2213,7 +2213,7 @@
     }
 
     function exerciseGifUrl(mediaId) {
-      return `https://static.exercisedb.dev/media/${encodeURIComponent(mediaId)}.gif`;
+      return `https://cdn.jsdelivr.net/gh/bootstrapping-lab/exercisedb-api@main/media/${encodeURIComponent(mediaId)}.gif`;
     }
 
     function renderPlanOptions() {
